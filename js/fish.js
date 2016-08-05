@@ -13,9 +13,7 @@ function getZones(){
     zones.push($('#'+q+'max').val()-$('#'+q+'min').val());
   }
 }
-//on load
-$(function() {
-  //initial table creation
+function updateTank(){
   $('#tankDiv').html('');
   var tH=$('#tankHeight').val();
   var tW=$('#tankWidth').val();
@@ -36,28 +34,17 @@ $(function() {
   }
   
   getZones();
+}
+//on load
+$(function() {
+  //initial table creation
+  updateTank();
+  
   //change tank height
   $('#tankWidth,#tankHeight,#widthDiv,#heightDiv').change(function(){
-    $('#tankDiv').html('');
-	var tH=$('#tankHeight').val();
-	var tW=$('#tankWidth').val();
-	var hD=$('#heightDiv').val();
-	var wD=$('#widthDiv').val();
-  
-	$('#tankDiv').attr('width',tW);
-	var row='';
-	var cell=1;
-	for(i=0;i<hD;i++){
-		row='<tr>';
-		for(var j=0;j<wD;j++){
-			row+='<td height='+(tH/hD)+' id=cell'+cell+'>Cell-'+cell+'</td>';
-			cell++;
-		}
-		row+='</tr>';
-		$('#tankDiv').append(row);
-	}
-    getZones();
+    updateTank();
   });
+  
   //if user changes # of zones or width of zones can recalculate time in each, without re-upload
   $('#calculate').on('click',function(){
     if(fileContent!=undefined&&fileContent.length>0){
@@ -66,6 +53,7 @@ $(function() {
       calculate(false);
     }
   });
+  
   //clear other file input, so user knows what they are viewing
   $('input[type=file]').on('change',function(){
     var butId=$(this).attr('id');
@@ -80,23 +68,29 @@ $(function() {
     $('#downloadImg').attr('src','img/download.png');
     $('#download').attr('title','Download fish tracking data');
     $('#download').attr('name','download');
+    
+    //remove?
     //ability to draw chart
-    $('#chartArea').html('');
+    /*$('#chartArea').html('');
     $('#chartType').val('');
-    $('#chartType').attr('disabled',false);
+    $('#chartType').attr('disabled',false);*/
+   
 	//enable button
 	$('#calculate').attr('disabled',false);
 	$('#calculate').attr('title','Track that fish!');
 	
   });
+  /*
   $('#chartType').on('change',function(){
     var chart=$(this).val();
     console.log(chart);
     if(fileContent.length>0){
       drawChart(chart);
     }
-  });
+  });*/
 });
+/*
+//remove?
 //choose which chart to draw
 function drawChart(chart){
   var zoneLabels=exportInfo.substring(22,exportInfo.indexOf('\r\n')).split(',');
@@ -172,6 +166,8 @@ function drawChart(chart){
     });
   }
 }
+
+*/
 //calculate time each job spends per zone
 function calculate(checkForNegatives){
   var job,job1x,job1y,job2x,job2y;
@@ -235,13 +231,128 @@ function calculate(checkForNegatives){
       }
     }
 	
+	//data in array
 	//console.log(job);
 	
+	//vars for cell calc
+  	var tH=$('#tankHeight').val();
+  	var tW=$('#tankWidth').val();
+  	var hD=$('#heightDiv').val();
+  	var wD=$('#widthDiv').val();
+  	var cellWidth=tW/wD;
+  	var cellHeight=tH/hD;
+	var cells1 = new Array(hD*wD).fill(0);
+	var cells2 = new Array(hD*wD).fill(0);
+  	
+  	//vars for boundary
+  	var startTime=job[0][0];
+  	var xb=$('#xbound').val();
+  	var yb=$('#ybound').val();
+  	var left1=job[0][1]<xb;
+  	var left2=job[0][4]<xb;
+  	var down1=job[0][2]<yb;
+  	var down2=job[0][5]<yb;
+  	var xlat1=0,ylat1=0,xlat2=0,ylat2=0;
+  	var xcross1=0,ycross1=0,xcross2=0,ycross2=0;
 	
-    /*var total1=0,total2=0,diff;zoneTime1=[],zoneTime2=[];
-    var start1=-1,start2=-1,end1,end2,lowerBound=0;
+	console.log(left1);
+	console.log(left2);
+	console.log(down1);
+	console.log(down2);
+	
+	//record the each fish spends in each cell
+	var cellnum1,cellnum2,prev1=-1,prev2=-1;
+    var start1=-1,start2=-1,diff;
+	for(l=0;l<job.length;l++){
+		//cell calc
+		if(start1==-1){
+			start1=job[l][0];
+		}
+		if(start2==-1){
+			start2=job[l][0];
+		}
+		cellnum1=Math.floor(job[l][1]/cellWidth)+3*Math.floor(job[l][2]/cellHeight);
+		cellnum2=Math.floor(job[l][4]/cellWidth)+3*Math.floor(job[l][5]/cellHeight);
+		if(cellnum1!=prev1&&prev1!=-1){
+			diff=job[l][0]-start1;
+			cells1[prev1]+=diff;
+			start1=-1;
+		}
+		if(cellnum2!=prev2&&prev1!=-1){
+			diff=job[l][0]-start2;
+			cells2[prev2]+=diff;
+			start2=-1;
+		}
+		prev1=cellnum1;
+		prev2=cellnum2;
+		
+		//boundary calc
+		//fish1 x boundary
+		if(left1&&!job[l][1]<xb){//crossed left to right
+			if(xlat1==0){
+				xlat1=job[l][0]-startTime;
+			} 
+			xcross1++;
+		}else if(!left1&&job[l][1]<xb){//crossed right to left
+			if(xlat1==0){
+				xlat1=job[l][0]-startTime;
+			} 
+			xcross1++;
+		}
+		//fish1 y boundary
+		if(down1&&!job[l][2]<yb){//crossed down to up
+			if(ylat1==0){
+				ylat1=job[l][0]-startTime;
+			} 
+			ycross1++;
+		}else if(!down1&&job[l][2]<yb){//crossed up to down
+			if(ylat1==0){
+				ylat1=job[l][0]-startTime;
+			} 
+			ycross1++;
+		}
+		//fish2 x boundary
+		if(left2&&!job[l][1]<xb){//crossed left to right
+			if(xlat2==0){
+				xlat2=job[l][0]-startTime;
+			} 
+			xcross2++;
+		}else if(!left2&&job[l][1]<xb){//crossed right to left
+			if(xlat2==0){
+				xlat2=job[l][0]-startTime;
+			} 
+			xcross2++;
+		}
+		//fish2 y boundary
+		if(down2&&!job[l][2]<yb){//crossed down to up
+			if(ylat2==0){
+				ylat2=job[l][0]-startTime;
+			} 
+			ycross2++;
+		}else if(!down2&&job[l][2]<yb){//crossed up to down
+			if(ylat2==0){
+				ylat2=job[l][0]-startTime;
+			} 
+			ycross2++;
+		}
+		
+		//console.log(cellnum1+' '+cellnum2);
+		/*if(start1==-1){
+			start1=job[l][0];
+		}*/
+	}
+	//into seconds (milli/1000.0).toFixed(2)
+	
+	/*
+	//debugging for cell amount
+	for(i=0;i<cells1.length;i++)
+		console.log((cells1[i]/1000.0).toFixed(2));*/
+	//debugging boundary
+	//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
+	//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
+	
     //zonify
-    for(p=0;p<$('#sections').val();p++){
+    /*for(p=0;p<$('#sections').val();p++){
       //read each line of file find job times for current zone
       for(t=0;t<job.length;t++){
         if(job[t][1]>=lowerBound&&job[t][1]<lowerBound+zones[p]&&start1==-1){
@@ -275,6 +386,7 @@ function calculate(checkForNegatives){
       total2=0;
       lowerBound+=zones[p];
     }*/
+   
     //data to csv format
     if(name2!=''){
       exportInfo=exportInfo+'Job_1,'+name1+',';
