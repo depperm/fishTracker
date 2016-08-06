@@ -35,14 +35,25 @@ function updateTank(){
   
   getZones();
 }
+function updateExteriorVal(){
+	var percentage=$('#exterior').val()/100.0;
+	$('#extamt').val($('#tankHeight').val()*percentage);
+}
 //on load
 $(function() {
   //initial table creation
   updateTank();
   
-  //change tank height
+  //set exterior
+  updateExteriorVal();
+  
+  //change tank dimensions
   $('#tankWidth,#tankHeight,#widthDiv,#heightDiv').change(function(){
     updateTank();
+  });
+  
+  $('#tankHeight,#exterior').change(function(){
+  	updateExteriorVal();
   });
   
   //if user changes # of zones or width of zones can recalculate time in each, without re-upload
@@ -168,6 +179,10 @@ function drawChart(chart){
 }
 
 */
+function calcDist(x1,y1,x2,y2){
+	return Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
+}
+
 //calculate time each job spends per zone
 function calculate(checkForNegatives){
   var job,job1x,job1y,job2x,job2y;
@@ -243,6 +258,8 @@ function calculate(checkForNegatives){
   	var cellHeight=tH/hD;
 	var cells1 = new Array(hD*wD).fill(0);
 	var cells2 = new Array(hD*wD).fill(0);
+	var cell1b = [];
+	var cell2b = [];
   	
   	//vars for boundary
   	var startTime=job[0][0];
@@ -255,10 +272,47 @@ function calculate(checkForNegatives){
   	var xlat1=0,ylat1=0,xlat2=0,ylat2=0;
   	var xcross1=0,ycross1=0,xcross2=0,ycross2=0;
 	
-	console.log(left1);
-	console.log(left2);
-	console.log(down1);
-	console.log(down2);
+	//vars for moving/still
+	var moveAllowed=$('#moving').val();
+	var moveTime=$('#still').val();
+	var prevx1=job[0][1];
+	var prevy1=job[0][2];
+	var prevx2=job[0][4];
+	var prevy2=job[0][5];
+	var prevTime=job[0][0];
+	var moving1=0;
+	var moving2=0;
+	var still1=0;
+	var still2=0;
+	var moveRatio=moveAllowed/moveTime;
+	
+	//vars for exterior
+	var interior1=0;
+	var exterior1=0;
+	var interior2=0;
+	var exterior2=0;
+	var extRange=$('#tankHeight').val()*$('#exterior').val()/100.0;
+	
+	//vars for point of interest
+	var poix=$('#xpoint').val();
+	var poiy=$('#ypoint').val();
+	var radius=$('#rpoint').val();
+	//is within poi
+	var withinpoi1=calcDist(prevx1,prevy1,poix,poiy)<=radius;
+	var withinpoi2=calcDist(prevx2,prevy2,poix,poiy)<=radius;
+	//start fish enter
+	var withinstart1=withinpoi1?0:-1;
+	var withinstart2=withinpoi2?0:-1;
+	//time in poi
+	var within1=0;
+	var within2=0;
+	//time til enter 1st time
+	var poilat1=withinpoi1?0:-1;
+	var poilat2=withinpoi2?0:-1;
+	//count times enter poi
+	var poi1=withinpoi1?1:0;
+	var poi2=withinpoi2?1:0;
+	var tempd1,tempd2;
 	
 	//record the each fish spends in each cell
 	var cellnum1,cellnum2,prev1=-1,prev2=-1;
@@ -277,16 +331,86 @@ function calculate(checkForNegatives){
 			diff=job[l][0]-start1;
 			cells1[prev1]+=diff;
 			start1=-1;
+			cell1b.push([prev1+1,cellnum1+1]);
 		}
 		if(cellnum2!=prev2&&prev1!=-1){
 			diff=job[l][0]-start2;
 			cells2[prev2]+=diff;
 			start2=-1;
+			cell2b.push([prev2+1,cellnum2+1]);
 		}
 		prev1=cellnum1;
 		prev2=cellnum2;
 		
-		//boundary calc
+		//moving/still
+		//fish 1
+		if(((job[l][0]-prevTime)/1000)!=0 && calcDist(job[l][1],job[l][2],prevx1,prevy1)/((job[l][0]-prevTime)/1000)>=moveRatio){
+			moving1+=job[l][0]-prevTime;
+		}else{
+			still1+=job[l][0]-prevTime;
+		}
+		//fish 2
+		if(((job[l][0]-prevTime)/1000)!=0 && calcDist(job[l][4],job[l][5],prevx2,prevy2)/((job[l][0]-prevTime)/1000)>=moveRatio){
+			moving2+=job[l][0]-prevTime;
+		}else{
+			still2+=job[l][0]-prevTime;
+		}
+		prevx1=job[l][1];
+		prevy1=job[l][2];
+		prevx2=job[l][4];
+		prevy2=job[l][5];
+		
+		//near exterior
+		//fish 1
+		if(prevx1<extRange||prevx1>tW-extRange||prevy1<extRange||prevy1>tH-extRange){
+			exterior1+=job[l][0]-prevTime;
+		}else{
+			interior1+=job[l][0]-prevTime;
+		}
+		//fish 2
+		if(prevx2<extRange||prevx2>tW-extRange||prevy2<extRange||prevy2>tH-extRange){
+			exterior2+=job[l][0]-prevTime;
+		}else{
+			interior2+=job[l][0]-prevTime;
+		}
+		
+		//near POI
+		tempd1=calcDist(prevx1,prevy1,poix,poiy);
+		tempd2=calcDist(prevx2,prevy2,poix,poiy);
+		//fish1
+		if(withinpoi1){
+			if(tempd1>radius){
+				within+=job[l][0]-withinstart1;
+				withinpoi1=false;
+			}
+		}else{
+			if(tempd1<=radius){
+				withinpoi1=true;
+				poi1++;
+				if(poilat1==-1){
+					poilat1=job[l][0]-0;
+				}
+				withinstart1=job[l][0];
+			}
+		}
+		//fish2
+		if(withinpoi2){
+			if(tempd2>radius){
+				within2+=job[l][0]-withinstart2;
+				withinpoi2=false;
+			}
+		}else{
+			if(tempd2<=radius){
+				withinpoi2=true;
+				poi2++;
+				if(poilat2==-1){
+					poilat2=job[l][0]-0;
+				}
+				withinstart2=job[l][0];
+			}
+		}
+		
+		//boundary crossing calc
 		//fish1 x boundary
 		if(left1&&!job[l][1]<xb){//crossed left to right
 			if(xlat1==0){
@@ -336,6 +460,7 @@ function calculate(checkForNegatives){
 			ycross2++;
 		}
 		
+		prevTime=job[l][0];
 		//console.log(cellnum1+' '+cellnum2);
 		/*if(start1==-1){
 			start1=job[l][0];
@@ -346,11 +471,20 @@ function calculate(checkForNegatives){
 	/*
 	//debugging for cell amount
 	for(i=0;i<cells1.length;i++)
-		console.log((cells1[i]/1000.0).toFixed(2));*/
+		console.log((cells1[i]/1000.0).toFixed(2));//*/
 	//debugging boundary
 	//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
 	//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
+	//debugging cell boundary
+	//console.log(JSON.stringify(cell1b));
+	//debugging time moving/still
+	//console.log(moving1+' '+still1+' '+moving2+' '+still2);
+	//debugging exterior
+	//console.log(interior1+' '+exterior1+' '+interior2+' '+exterior2);
+	//debugging poi
+	console.log(poilat1+' '+poilat2+' '+within1+' '+within2);
 	
+	//remove?
     //zonify
     /*for(p=0;p<$('#sections').val();p++){
       //read each line of file find job times for current zone
