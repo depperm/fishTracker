@@ -98,13 +98,15 @@ $(function() {
 function calcDist(x1, y1, x2, y2) {
 	return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
 }
-var PADDING_AMT=12;
-function pad(str,padding=PADDING_AMT,comma){
-	if(comma==undefined)
-		comma=true;
-	str+='';//make sure input is string
-	var pad = Array(padding+1).join(" ");
-	var ans = (comma?',':'')+pad.substring(0, pad.length - str.length) + str;
+
+var PADDING_AMT = 12;
+function pad(str,padding=PADDING_AMT,comma) {
+	if (comma == undefined)
+		comma = true;
+	str += '';
+	//make sure input is string
+	var pad = Array(padding + 1).join(" ");
+	var ans = ( comma ? ',' : '') + pad.substring(0, pad.length - str.length) + str;
 	return ans;
 }
 
@@ -134,9 +136,12 @@ function calculate(checkForNegatives) {
 	var name1,
 	    name2;
 	//csv header
-	exportInfo = pad('ID',PADDING_AMT,false)+pad('moving')+pad('still')+pad('x_lat')+pad('x_bound_num')+pad('y_lat')+pad('y_bound_num')+pad('interior')+pad('exterior')+pad('poi_lat')+pad('poi_time')+pad('poi_entered');
+	exportInfo = pad('ID', PADDING_AMT, false) + pad('moving') + pad('still') + pad('moving_prop') + pad('still_prop') + pad('x_lat') + pad('x_bound_num') + pad('y_lat') + pad('y_bound_num') + pad('interior') + pad('exterior') + pad('int_prop') + pad('ext_prop') + pad('poi_lat') + pad('poi_time') + pad('poi_entered') + pad('bound_crossed') + pad('explored');
 	for ( c = 0; c < hD * wD; c++) {
 		exportInfo += pad('cell_' + (c + 1));
+	}
+	for ( c = 0; c < hD * wD; c++) {
+		exportInfo += pad('cell_prop' + (c + 1));
 	}
 	exportInfo += '\n';
 	//for each file
@@ -412,6 +417,13 @@ function calculate(checkForNegatives) {
 
 			prevTime = job[l][0];
 		}
+		diff = job[job.length-1][0] - start1;
+		cells1[prev1] += diff;
+		cell1b.push([prev1 + 1, cellnum1 + 1]);
+		
+		diff = job[job.length-1][0] - start2;
+		cells2[prev2] += diff;
+		cell2b.push([prev2 + 1, cellnum2 + 1]);
 
 		/*
 		//debugging for cell amount
@@ -421,26 +433,45 @@ function calculate(checkForNegatives) {
 		//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
 		//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
 
+		var total_time = moving1 + still1;
+		var movingProp1 = moving1 / total_time;
+		var stillProp1 = still1 / total_time;
+		var intProp1 = interior1 / total_time;
+		var extProp1 = exterior1 / total_time;
+
 		//data to csv format
 		if (name2 != '') {
+			var movingProp2 = moving2 / total_time;
+			var stillProp2 = still2 / total_time;
+			var intProp2 = interior2 / total_time;
+			var extProp2 = exterior2 / total_time;
 			//exportInfo=exportInfo+'Job_1,'+name1+',';
-			exportInfo += pad(name1,PADDING_AMT,comma=false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1);
+			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / total_time);
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
 			}
+			for ( c = 0; c < hD * wD; c++) {
+				exportInfo += pad(cells1[c] / total_time);
+			}
 			exportInfo += '\n';
-			exportInfo += pad(name2,PADDING_AMT,comma=false) + pad(toSec(moving2)) + pad(toSec(still2)) + pad(toSec(xlat2)) + pad(xcross2) + pad(toSec(ylat2)) + pad(ycross2);
-			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2);
+			exportInfo += pad(name2, PADDING_AMT, comma = false) + pad(toSec(moving2)) + pad(toSec(still2)) + pad(movingProp2) + pad(stillProp2) + pad(toSec(xlat2)) + pad(xcross2) + pad(toSec(ylat2)) + pad(ycross2);
+			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad(cell2b.length / total_time);
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells2[c]));
 			}
+			for ( c = 0; c < hD * wD; c++) {
+				exportInfo += pad(cells2[c] / total_time);
+			}
 			exportInfo += '\n';
 		} else {
-			exportInfo += pad(name1,PADDING_AMT,comma=false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1);
+			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / total_time);
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
+			}
+			for ( c = 0; c < hD * wD; c++) {
+				exportInfo += pad(cells1[c] / total_time);
 			}
 		}
 	}
@@ -485,11 +516,12 @@ function readmultifiles(files) {
 				t = temp[i].split(/\s+/);
 				//if not 7 values check **TODO: add checks for various number columns
 				if (t.length != 7) {
-					var diff = t.length - 7;
-					if (diff % 3 == 0)
-						t.splice(3, diff);
-					else
+					var diff = 7 - t.length;
+					if (diff % 3 == 0) {
+						ntemp.push(t);
+					} else {
 						console.log('Error reading:' + file.name + ' at line ' + i);
+					}
 				} else {
 					ntemp.push(t);
 				}
