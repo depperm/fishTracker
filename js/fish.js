@@ -128,11 +128,17 @@ function calculate(checkForNegatives) {
 	    total1,
 	    total2;
 	var hunt1 = false,
-	    hunt2 = false;
+	    hunt2 = false,
+	    hunt3 = false,
+	    hunt4= false;
 	var real1,
 	    real2,
+	    real3,
+	    real4,
 	    preal1,
-	    preal2;
+	    preal2,
+	    preal3,
+	    preal4;
 	var name1,
 	    name2;
 	//csv header
@@ -163,11 +169,17 @@ function calculate(checkForNegatives) {
 			hunt1 = true;
 		if (job[0][4] == -1)
 			hunt2 = true;
+		if (job[0][2] == -1)
+			hunt3 = true;
+		if (job[0][5] == -1)
+			hunt4 = true;
 		//get rid of negative numbers
 		if (checkForNegatives) {
 			for ( t = 0; t < job.length; t++) {
 				real1 = job[t][1];
 				real2 = job[t][4];
+				real3 = job[t][2];
+				real4 = job[t][5];
 				if (hunt1 && real1 != -1) {
 					for ( x = i; x >= 0; x--) {
 						job[x][1] = real1;
@@ -186,8 +198,28 @@ function calculate(checkForNegatives) {
 					job[t][4] = preal2;
 					real2 = preal2;
 				}
+				if (hunt3 && real3 != -1) {
+					for ( x = i; x >= 0; x--) {
+						job[x][2] = real3;
+					}
+					hunt3 = false;
+				} else if (!hunt3 && real3 == -1) {
+					job[t][2] = preal3;
+					real3 = preal3;
+				}
+				if (hunt4 && real4 != -1) {
+					for ( x = i; x >= 0; x--) {
+						job[x][5] = real4;
+					}
+					hunt4 = false;
+				} else if (!hunt4 && real4 == -1) {
+					job[t][5] = preal4;
+					real4 = preal4;
+				}
 				preal1 = real1;
 				preal2 = real2;
+				preal3 = real3;
+				preal4 = real4;
 			}
 		}
 
@@ -272,6 +304,7 @@ function calculate(checkForNegatives) {
 		var start1 = -1,
 		    start2 = -1,
 		    diff;
+		console.log(job);
 		for ( l = 0; l < job.length; l++) {
 			//cell calc
 			if (start1 == -1) {
@@ -282,6 +315,7 @@ function calculate(checkForNegatives) {
 			}
 			cellnum1 = Math.floor(job[l][1] / cellWidth) + 3 * Math.floor(job[l][2] / cellHeight);
 			cellnum2 = Math.floor(job[l][4] / cellWidth) + 3 * Math.floor(job[l][5] / cellHeight);
+			//console.log(cellnum1+' '+prev1);
 			if (cellnum1 != prev1 && prev1 != -1) {
 				diff = job[l][0] - start1;
 				cells1[prev1] += diff;
@@ -420,11 +454,12 @@ function calculate(checkForNegatives) {
 		diff = job[job.length-1][0] - start1;
 		cells1[prev1] += diff;
 		cell1b.push([prev1 + 1, cellnum1 + 1]);
-		
+
 		diff = job[job.length-1][0] - start2;
 		cells2[prev2] += diff;
 		cell2b.push([prev2 + 1, cellnum2 + 1]);
 
+		console.log(cell1b);
 		/*
 		//debugging for cell amount
 		for(i=0;i<cells1.length;i++)
