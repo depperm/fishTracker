@@ -447,7 +447,7 @@ function calculate(checkForNegatives) {
 			var extProp2 = exterior2 / total_time;
 			//exportInfo=exportInfo+'Job_1,'+name1+',';
 			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / total_time);
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / toSec(total_time));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
 			}
@@ -456,7 +456,7 @@ function calculate(checkForNegatives) {
 			}
 			exportInfo += '\n';
 			exportInfo += pad(name2, PADDING_AMT, comma = false) + pad(toSec(moving2)) + pad(toSec(still2)) + pad(movingProp2) + pad(stillProp2) + pad(toSec(xlat2)) + pad(xcross2) + pad(toSec(ylat2)) + pad(ycross2);
-			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad(cell2b.length / total_time);
+			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad(cell2b.length / toSec(total_time));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells2[c]));
 			}
@@ -466,13 +466,14 @@ function calculate(checkForNegatives) {
 			exportInfo += '\n';
 		} else {
 			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / total_time);
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / toSec(total_time));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
 			}
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(cells1[c] / total_time);
 			}
+			exportInfo += '\n';
 		}
 	}
 	var d = new Date();
