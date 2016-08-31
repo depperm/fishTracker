@@ -165,12 +165,16 @@ function calculate(checkForNegatives) {
 			name2 = '';
 			listOfTrials.push(name1);
 		}
+		//x1
 		if (job[0][1] == -1)
 			hunt1 = true;
+		//x2
 		if (job[0][4] == -1)
 			hunt2 = true;
+		//y1
 		if (job[0][2] == -1)
 			hunt3 = true;
+		//y2
 		if (job[0][5] == -1)
 			hunt4 = true;
 		//get rid of negative numbers
@@ -226,6 +230,8 @@ function calculate(checkForNegatives) {
 		//data in array
 		//console.log(job);
 
+		//general vars
+		var x1,y1,x2,y2;
 		//vars for cell calc
 		var tH = $('#tankHeight').val();
 		var tW = $('#tankWidth').val();
@@ -306,6 +312,11 @@ function calculate(checkForNegatives) {
 		    diff;
 		console.log(job);
 		for ( l = 0; l < job.length; l++) {
+			x1=job[l][1];
+			y1=job[l][2];
+			x2=job[l][4];
+			y2=job[l][5];
+
 			//cell calc
 			if (start1 == -1) {
 				start1 = job[l][0];
@@ -313,8 +324,8 @@ function calculate(checkForNegatives) {
 			if (start2 == -1) {
 				start2 = job[l][0];
 			}
-			cellnum1 = Math.floor(job[l][1] / cellWidth) + 3 * Math.floor(job[l][2] / cellHeight);
-			cellnum2 = Math.floor(job[l][4] / cellWidth) + 3 * Math.floor(job[l][5] / cellHeight);
+			cellnum1 = Math.floor(x1 / cellWidth) + (((wD-1)*Math.floor(y1 / cellHeight)) + Math.floor(y1 / cellHeight));
+			cellnum2 = Math.floor(x2 / cellWidth) + (((wD-1)*Math.floor(y2 / cellHeight)) + Math.floor(y2 / cellHeight));
 			//console.log(cellnum1+' '+prev1);
 			if (cellnum1 != prev1 && prev1 != -1) {
 				diff = job[l][0] - start1;
@@ -333,39 +344,39 @@ function calculate(checkForNegatives) {
 
 			//moving/still
 			//fish 1
-			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(job[l][1], job[l][2], prevx1, prevy1) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
+			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(x1, y1, prevx1, prevy1) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
 				moving1 += job[l][0] - prevTime;
 			} else {
 				still1 += job[l][0] - prevTime;
 			}
 			//fish 2
-			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(job[l][4], job[l][5], prevx2, prevy2) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
+			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(x2, y2, prevx2, prevy2) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
 				moving2 += job[l][0] - prevTime;
 			} else {
 				still2 += job[l][0] - prevTime;
 			}
-			prevx1 = job[l][1];
-			prevy1 = job[l][2];
-			prevx2 = job[l][4];
-			prevy2 = job[l][5];
+			prevx1 = x1;
+			prevy1 = y1;
+			prevx2 = x2;
+			prevy2 = y2;
 
 			//near exterior
 			//fish 1
-			if (prevx1 < extRange || prevx1 > tW - extRange || prevy1 < extRange || prevy1 > tH - extRange) {
+			if (x1 < extRange || x1 > tW - extRange || y1 < extRange || y1 > tH - extRange) {
 				exterior1 += job[l][0] - prevTime;
 			} else {
 				interior1 += job[l][0] - prevTime;
 			}
 			//fish 2
-			if (prevx2 < extRange || prevx2 > tW - extRange || prevy2 < extRange || prevy2 > tH - extRange) {
+			if (x2 < extRange || x2 > tW - extRange || y2 < extRange || y2 > tH - extRange) {
 				exterior2 += job[l][0] - prevTime;
 			} else {
 				interior2 += job[l][0] - prevTime;
 			}
 
 			//near POI
-			tempd1 = calcDist(prevx1, prevy1, poix, poiy);
-			tempd2 = calcDist(prevx2, prevy2, poix, poiy);
+			tempd1 = calcDist(x1, y1, poix, poiy);
+			tempd2 = calcDist(x2, y2, poix, poiy);
 			//fish1
 			if (withinpoi1) {
 				if (tempd1 > radius) {
@@ -401,48 +412,48 @@ function calculate(checkForNegatives) {
 
 			//boundary crossing calc
 			//fish1 x boundary
-			if (left1 && !job[l][1] < xb) {//crossed left to right
+			if (left1 && !x1 < xb) {//crossed left to right
 				if (xlat1 == 0) {
 					xlat1 = job[l][0] - startTime;
 				}
 				xcross1++;
-			} else if (!left1 && job[l][1] < xb) {//crossed right to left
+			} else if (!left1 && x1 < xb) {//crossed right to left
 				if (xlat1 == 0) {
 					xlat1 = job[l][0] - startTime;
 				}
 				xcross1++;
 			}
 			//fish1 y boundary
-			if (down1 && !job[l][2] < yb) {//crossed down to up
+			if (down1 && !y1 < yb) {//crossed down to up
 				if (ylat1 == 0) {
 					ylat1 = job[l][0] - startTime;
 				}
 				ycross1++;
-			} else if (!down1 && job[l][2] < yb) {//crossed up to down
+			} else if (!down1 && y1 < yb) {//crossed up to down
 				if (ylat1 == 0) {
 					ylat1 = job[l][0] - startTime;
 				}
 				ycross1++;
 			}
 			//fish2 x boundary
-			if (left2 && !job[l][1] < xb) {//crossed left to right
+			if (left2 && !x2 < xb) {//crossed left to right
 				if (xlat2 == 0) {
 					xlat2 = job[l][0] - startTime;
 				}
 				xcross2++;
-			} else if (!left2 && job[l][1] < xb) {//crossed right to left
+			} else if (!left2 && x2 < xb) {//crossed right to left
 				if (xlat2 == 0) {
 					xlat2 = job[l][0] - startTime;
 				}
 				xcross2++;
 			}
 			//fish2 y boundary
-			if (down2 && !job[l][2] < yb) {//crossed down to up
+			if (down2 && !y2 < yb) {//crossed down to up
 				if (ylat2 == 0) {
 					ylat2 = job[l][0] - startTime;
 				}
 				ycross2++;
-			} else if (!down2 && job[l][2] < yb) {//crossed up to down
+			} else if (!down2 && y2 < yb) {//crossed up to down
 				if (ylat2 == 0) {
 					ylat2 = job[l][0] - startTime;
 				}
@@ -450,6 +461,12 @@ function calculate(checkForNegatives) {
 			}
 
 			prevTime = job[l][0];
+
+			if(job[l][0]==117543){
+				console.log('#######');
+				console.log(job[l][1] +' '+job[l][2]);
+				console.log(prev1);
+			}
 		}
 		diff = job[job.length-1][0] - start1;
 		cells1[prev1] += diff;
@@ -460,53 +477,56 @@ function calculate(checkForNegatives) {
 		cell2b.push([prev2 + 1, cellnum2 + 1]);
 
 		console.log(cell1b);
-		/*
+
+		console.log('*********************');
 		//debugging for cell amount
-		for(i=0;i<cells1.length;i++)
-		console.log((cells1[i]/1000.0).toFixed(2));//*/
+		for(i=0;i<cells1.length;i++){
+			console.log((cells1[i]/1000.0).toFixed(2));
+		}//*/
+		console.log('*********************');
 		//debugging boundary
 		//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
 		//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
 
 		var total_time = moving1 + still1;
-		var movingProp1 = moving1 / total_time;
-		var stillProp1 = still1 / total_time;
-		var intProp1 = interior1 / total_time;
-		var extProp1 = exterior1 / total_time;
+		var movingProp1 = (moving1 / total_time).toFixed(2);
+		var stillProp1 = (still1 / total_time).toFixed(2);
+		var intProp1 = (interior1 / total_time).toFixed(2);
+		var extProp1 = (exterior1 / total_time).toFixed(2);
 
 		//data to csv format
 		if (name2 != '') {
-			var movingProp2 = moving2 / total_time;
-			var stillProp2 = still2 / total_time;
-			var intProp2 = interior2 / total_time;
-			var extProp2 = exterior2 / total_time;
+			var movingProp2 = (moving2 / total_time).toFixed(2);
+			var stillProp2 = (still2 / total_time).toFixed(2);
+			var intProp2 = (interior2 / total_time).toFixed(2);
+			var extProp2 = (exterior2 / total_time).toFixed(2);
 			//exportInfo=exportInfo+'Job_1,'+name1+',';
 			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / toSec(total_time));
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad((cell1b.length / toSec(total_time)).toFixed(2));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
 			}
 			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(cells1[c] / total_time);
+				exportInfo += pad((cells1[c] / total_time).toFixed(2));
 			}
 			exportInfo += '\n';
 			exportInfo += pad(name2, PADDING_AMT, comma = false) + pad(toSec(moving2)) + pad(toSec(still2)) + pad(movingProp2) + pad(stillProp2) + pad(toSec(xlat2)) + pad(xcross2) + pad(toSec(ylat2)) + pad(ycross2);
-			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad(cell2b.length / toSec(total_time));
+			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad((cell2b.length / toSec(total_time)).toFixed(2));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells2[c]));
 			}
 			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(cells2[c] / total_time);
+				exportInfo += pad((cells2[c] / total_time).toFixed(2));
 			}
 			exportInfo += '\n';
 		} else {
 			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad(cell1b.length / toSec(total_time));
+			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad((cell1b.length / toSec(total_time)).toFixed(2));
 			for ( c = 0; c < hD * wD; c++) {
 				exportInfo += pad(toSec(cells1[c]));
 			}
 			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(cells1[c] / total_time);
+				exportInfo += pad((cells1[c] / total_time).toFixed(2));
 			}
 			exportInfo += '\n';
 		}
