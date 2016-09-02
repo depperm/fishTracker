@@ -310,7 +310,7 @@ function calculate(checkForNegatives) {
 		var start1 = -1,
 		    start2 = -1,
 		    diff;
-		console.log(job);
+		//console.log(job);
 		for ( l = 0; l < job.length; l++) {
 			x1=job[l][1];
 			y1=job[l][2];
@@ -462,11 +462,11 @@ function calculate(checkForNegatives) {
 
 			prevTime = job[l][0];
 
-			if(job[l][0]==117543){
+			/*if(job[l][0]==117543){
 				console.log('#######');
 				console.log(job[l][1] +' '+job[l][2]);
 				console.log(prev1);
-			}
+			}*/
 		}
 		diff = job[job.length-1][0] - start1;
 		cells1[prev1] += diff;
@@ -476,14 +476,14 @@ function calculate(checkForNegatives) {
 		cells2[prev2] += diff;
 		cell2b.push([prev2 + 1, cellnum2 + 1]);
 
-		console.log(cell1b);
+		/*console.log(cell1b);
 
 		console.log('*********************');
 		//debugging for cell amount
 		for(i=0;i<cells1.length;i++){
 			console.log((cells1[i]/1000.0).toFixed(2));
-		}//*/
-		console.log('*********************');
+		}//
+		console.log('*********************');*/
 		//debugging boundary
 		//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
 		//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
