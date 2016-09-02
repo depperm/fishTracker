@@ -33,11 +33,20 @@ h3{
   text-align: center !important;
   margin: 20px auto 20px auto !important;
 }
+#saveDefaults{
+  font-size: 100%;
+  display: block !important;
+  margin-left:  auto;
+  height: 50px;
+}
 .description{
 	padding-bottom: 5px;
 	border: 1px dashed black;
 	margin-bottom:5px;
 	background-color: #adcbff;
+}
+.starting-pos{
+  width: 50px;
 }
 </style>
 <body>
@@ -45,6 +54,19 @@ h3{
   <table id='zoneDiv'>
     <tr id='inputs'>
       <td id='baseInfo' valign='top'>
+        <div class="jobs">
+    			<h3>Job Info</h3>
+          <div class='description'>Enter the starting x,y coordinate of each job you want measured.</div>
+    			<input type="text" id="jobstart1" class="starting-pos" />
+    			<input type="text" id="jobstart2" class="starting-pos" />
+    			<input type="text" id="jobstart3" class="starting-pos" />
+    			<input type="text" id="jobstart4" class="starting-pos" />
+    			<input type="text" id="jobstart5" class="starting-pos" />
+    			<input type="text" id="jobstart6" class="starting-pos" />
+    			<input type="text" id="jobstart7" class="starting-pos" />
+    			<input type="text" id="jobstart8" class="starting-pos" />
+    			<input type="text" id="jobstart9" class="starting-pos" />
+    		</div>
         <h3>General Settings</h3>
 		<div class='description'>Calculates how long the fish spends in each cell and how many times it crosses cell borders.</div>
 		<label>Tank Width:</label>
@@ -59,7 +81,7 @@ h3{
         <label>Height Divisions:</label>
         <input type="number" id="heightDiv" value=2 max=26 />
         <br />
-        
+
 		<div class="section">
 			<h3>Latency to Cross Boundary</h3>
 			<div class='description'>Calculates how long it takes for the fish to cross one or both of the set boundaries.</div>
@@ -69,24 +91,25 @@ h3{
 			<label>Y boundary:</label>
 			<input type="number" id="ybound" value=200 />
 		</div>
-		
+
 		<h3>Proportion of Time Spent Moving/Still</h3>
 		<div class='description'>Calculates how much time the fish spent moving around and still. The pixel range lets you determine how much the fish can move and still be considered non-moving.</div>
 		Pixel range <input type="number" id="moving" value=10 /> to <input id="still" type="number" value=5 /> seconds
-		
+
 		<div class="section">
 			<h3>Proportion of Time Spent Near Edge</h3>
 			<div class='description'>Calculates how much time the fish spends near the tank edge. The max range is 50%.</div>
 			Exterior range <input id="exterior" type="number" value=10 max=50 />% of height <br />
 			Within <input type="text" disabled id="extamt" /> px of wall
 		</div>
-		
+
 		<h3>Proportion of Time Near Point</h3>
 		<div class='description'>Calculates how long it takes for the fish to enter the radius, time spent with radius, and number of times fish enters the area.</div>
-		X <input type="number" id="xpoint" value=500 /> Y <input type="number" id="ypoint" value=380 /> radius <input id="rpoint" type="number" value=20 /> 
-		
+		X <input type="number" id="xpoint" value=500 /> Y <input type="number" id="ypoint" value=380 /> radius <input id="rpoint" type="number" value=20 />
+
 		<br />
-		
+    <input type="button" value="Save Inputs" id="saveDefaults" title="Save inputs to load as default" />
+    <br />
 		<input type="button" value="Calculate" disabled id="calculate" title="Choose a file to calculate" />
       </td>
       <td id='ranges' valign='top'>
@@ -105,23 +128,11 @@ h3{
   </div>
   <br />
   <div>
-    <label>Download fish tracking data </label>
+    <label>Download fish tracking data as CSV </label>
     <a id='download' name='warning' title='No data has been uploaded to track fish'><img id='downloadImg' src='img/warning.png' style='width:25px;height:25px;'></a>
     <br />
-    <!---
-    <label>View the Data in another format</label>
-    <select id='chartType' disabled>
-      <option value='' selected>Select a Chart Type</option>
-      <option value="scatter">Scatter Plot</option>
-      <option value="bar">Bar Chart</option>
-      <option value="stacked">Stacked Bar Chart</option>
-      <option value="spider">Spider Chart</option>
-    </select>
-    <label style="font-style:italic">Warning this should only be done on 5 or fewer files at a time. The time increases with the number of files.</label>--->
   </div>
   <br />
-  <!---<div id='chartArea'>
-  </div>--->
 
 </body>
 </html>
