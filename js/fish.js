@@ -180,7 +180,8 @@ function calculate(checkForNegatives) {
 		job = fileContent[i];
 		console.log('working on:' + fileNames[i]);
 		//var split = fileNames[i].indexOf('-');
-		listOfTrials.concat(fileNames[i].split('-'));
+		//listOfTrials.concat(fileNames[i].split('-'));
+		listOfTrials=fileNames[i].split('-');
 		for(var j=0;j<num_jobs;j++){
 			//x
 			if (job[0][j*3+1] == -1){
@@ -250,6 +251,7 @@ function calculate(checkForNegatives) {
 			//general vars
 			fileData[j].x=0;
 			fileData[j].y=0;
+			fileData[j].name=listOfTrials[j];
 			fileData[j].cells=new Array(hD * wD).fill(0);
 			fileData[j].cellb=[];
 			fileData[j].left=job[0][j*3+1]<xb;
