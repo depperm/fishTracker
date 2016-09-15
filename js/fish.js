@@ -226,7 +226,7 @@ function calculate(checkForNegatives) {
 
 		//data in array
 
-		//console.log(JSON.stringify(startingPos));
+		console.log(JSON.stringify(listOfTrials));
 
 		//input info
 		var tH = $('#tankHeight').val();
@@ -281,8 +281,8 @@ function calculate(checkForNegatives) {
 		console.log(job);
 		for ( l = 0; l < job.length; l++) {
 			for(var j=0;j<num_jobs;j++){
-				fileData[j].x=job[0][j*3+1];
-				fileData[j].y=job[0][j*3+2];
+				fileData[j].x=job[l][j*3+1];
+				fileData[j].y=job[l][j*3+2];
 				//cell calc
 				if (fileData[j].start == -1) {
 					fileData[j].start = job[l][0];
