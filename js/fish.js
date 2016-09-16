@@ -139,8 +139,6 @@ function calculate(checkForNegatives) {
 	var num_jobs=0;
 	var startingPos=[];
 	$('input[id^="jobstart"]').each(function(index){
-		console.log(index+':'+$( this ).val());
-		//console.log($( this ).val()=='');
 		if($(this).val()!=''&&$(this).val().indexOf(',')!=-1){
 			num_jobs++;
 			startingPos.push([parseInt($(this).val().split(',')[0]),parseInt($(this).val().split(',')[1])]);
@@ -281,14 +279,13 @@ function calculate(checkForNegatives) {
 		//console.log(job);
 		for ( l = 0; l < job.length; l++) {
 			for(var j=0;j<num_jobs;j++){
-				fileData[j].x=job[l][j*3+1];
-				fileData[j].y=job[l][j*3+2];
+				fileData[j].x=job[l][j*3+1]-startingPos[j][0];
+				fileData[j].y=job[l][j*3+2]-startingPos[j][1];
 				//cell calc
 				if (fileData[j].start == -1) {
 					fileData[j].start = job[l][0];
 				}
 				fileData[j].cellnum = Math.floor(fileData[j].x / cellWidth) + (((wD-1)*Math.floor(fileData[j].y / cellHeight)) + Math.floor(fileData[j].y / cellHeight));
-				console.log('cellnum:'+fileData[j].cellnum);
 				if (fileData[j].cellnum != fileData[j].prev && fileData[j].prev != -1) {
 					diff = job[l][0] - fileData[j].start;
 					fileData[j].cells[fileData[j].prev] += diff;
@@ -363,9 +360,9 @@ function calculate(checkForNegatives) {
 			fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
 		}
 
-		console.log('#############################');
-		console.log(JSON.stringify(fileData));
-		console.log('#############################');
+		//console.log('#############################');
+		//console.log(JSON.stringify(fileData));
+		//console.log('#############################');
 
 		//data to csv format
 		var total_time = fileData[0].moving + fileData[0].still;
