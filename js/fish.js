@@ -48,6 +48,14 @@ function toSec(milli) {
 
 //on load
 $(function() {
+	//load any saved values
+	for(var t=0;t<9;t++){
+		$('#jobstart'+(t+1)).val(localStorage.getItem('jobstart'+(t+1)));
+	}
+	$('#tankWidth').val(localStorage.getItem('width'));
+	$('#tankHeight').val(localStorage.getItem('height'));
+	$('#widthDiv').val(localStorage.getItem('widthDiv'));
+	$('#heightDiv').val(localStorage.getItem('heightDiv'));
 	//initial table creation
 	updateTank();
 
@@ -63,6 +71,18 @@ $(function() {
 		updateExteriorVal();
 	});
 
+	$('#saveDefaults').on('click',function(){
+		//save starting coord
+		$('input[id^="jobstart"]').each(function(index){
+			localStorage.setItem($(this).attr('id'),$(this).val());
+		});
+		//save height/width
+		localStorage.setItem('width',$('#tankWidth').val());
+		localStorage.setItem('height',$('#tankHeight').val());
+		//save divisions
+		localStorage.setItem('widthDiv',$('#widthDiv').val());
+		localStorage.setItem('heightDiv',$('#heightDiv').val());
+	});
 	//if user changes # of zones or width of zones can recalculate time in each, without re-upload
 	$('#calculate').on('click', function() {
 		if (fileContent != undefined && fileContent.length > 0) {
@@ -102,7 +122,7 @@ function calcDist(x1, y1, x2, y2) {
 var PADDING_AMT = 12;
 function pad(str,padding=PADDING_AMT,comma) {
 	if (comma == undefined)
-		comma = true;
+	comma = true;
 	str += '';
 	//make sure input is string
 	var pad = Array(padding + 1).join(" ");
@@ -112,35 +132,20 @@ function pad(str,padding=PADDING_AMT,comma) {
 
 //calculate time each job spends per zone
 function calculate(checkForNegatives) {
+
 	var hD = $('#heightDiv').val();
 	var wD = $('#widthDiv').val();
-	var job,
-	    job1x,
-	    job1y,
-	    job2x,
-	    job2y;
-	var time1start = -1,
-	    time1stop = -1,
-	    time2start = -1,
-	    time2stop = -1;
-	var diff1,
-	    diff2,
-	    total1,
-	    total2;
-	var hunt1 = false,
-	    hunt2 = false,
-	    hunt3 = false,
-	    hunt4= false;
-	var real1,
-	    real2,
-	    real3,
-	    real4,
-	    preal1,
-	    preal2,
-	    preal3,
-	    preal4;
-	var name1,
-	    name2;
+	//get starting points
+	var num_jobs=0;
+	var startingPos=[];
+	$('input[id^="jobstart"]').each(function(index){
+		console.log(index+':'+$( this ).val());
+		//console.log($( this ).val()=='');
+		if($(this).val()!=''&&$(this).val().indexOf(',')!=-1){
+			num_jobs++;
+			startingPos.push([parseInt($(this).val().split(',')[0]),parseInt($(this).val().split(',')[1])]);
+		}
+	});
 	//csv header
 	exportInfo = pad('ID', PADDING_AMT, false) + pad('moving') + pad('still') + pad('moving_prop') + pad('still_prop') + pad('x_lat') + pad('x_bound_num') + pad('y_lat') + pad('y_bound_num') + pad('interior') + pad('exterior') + pad('int_prop') + pad('ext_prop') + pad('poi_lat') + pad('poi_time') + pad('poi_entered') + pad('bound_crossed') + pad('explored');
 	for ( c = 0; c < hD * wD; c++) {
@@ -150,393 +155,244 @@ function calculate(checkForNegatives) {
 		exportInfo += pad('cell_prop' + (c + 1));
 	}
 	exportInfo += '\n';
+
+	var start={};
+	for(var j=0;j<num_jobs;j++){
+		start[j]={}
+		start[j].x=0;
+		start[j].y=0;
+		start[j].timestart=-1;
+		start[j].timestop=-1;
+		start[j].diff=0;
+		start[j].total=0;
+		start[j].huntx=false;
+		start[j].hunty=false;
+		start[j].realx=0;
+		start[j].realy=0;
+		start[j].prealx=0;
+		start[j].prealy=0;
+		start[j].name='';
+	}
+	var job;
+
 	//for each file
 	for ( i = 0; i < fileContent.length; i++) {
 		job = fileContent[i];
 		console.log('working on:' + fileNames[i]);
-		var split = fileNames[i].indexOf('-');
-		if (split > 0) {
-			name1 = fileNames[i].substring(0, split);
-			name2 = fileNames[i].substring(split + 1);
-			listOfTrials.push(name1);
-			listOfTrials.push(name2);
-		} else {
-			name1 = fileNames[i];
-			name2 = '';
-			listOfTrials.push(name1);
-		}
-		//x1
-		if (job[0][1] == -1)
-			hunt1 = true;
-		//x2
-		if (job[0][4] == -1)
-			hunt2 = true;
-		//y1
-		if (job[0][2] == -1)
-			hunt3 = true;
-		//y2
-		if (job[0][5] == -1)
-			hunt4 = true;
-		//get rid of negative numbers
-		if (checkForNegatives) {
-			for ( t = 0; t < job.length; t++) {
-				real1 = job[t][1];
-				real2 = job[t][4];
-				real3 = job[t][2];
-				real4 = job[t][5];
-				if (hunt1 && real1 != -1) {
-					for ( x = i; x >= 0; x--) {
-						job[x][1] = real1;
+		//var split = fileNames[i].indexOf('-');
+		//listOfTrials.concat(fileNames[i].split('-'));
+		listOfTrials=fileNames[i].split('-');
+		for(var j=0;j<num_jobs;j++){
+			//x
+			if (job[0][j*3+1] == -1){
+				start[j].huntx = true;
+			}
+			//y
+			if (job[0][j*3+2] == -1){
+				start[j].hunty = true;
+			}
+			//console.log(j+' hunting y '+start[j].hunty.toString());
+
+			//get rid of negative numbers
+			if (checkForNegatives) {
+				for ( t = 0; t < job.length; t++) {
+					start[j].realx = job[t][j*3+1];
+					start[j].realy = job[t][j*3+2];
+					//console.log('y is:'+start[j].realy);
+					//console.log(start[j].hunty && start[j].realy != -1);
+					if (start[j].huntx && start[j].realx != -1) {
+						for ( x = i; x >= 0; x--) {
+							job[x][j*3+1] = start[j].realx;
+						}
+						start[j].huntx = false;
+					} else if (!start[j].huntx && start[j].realx == -1) {
+						job[t][j*3+1] = start[j].prealx;
+						start[j].realx = start[j].prealx;
 					}
-					hunt1 = false;
-				} else if (!hunt1 && real1 == -1) {
-					job[t][1] = preal1;
-					real1 = preal1;
-				}
-				if (hunt2 && real2 != -1) {
-					for ( x = i; x >= 0; x--) {
-						job[x][4] = real2;
+					if (start[j].hunty && start[j].realy != -1) {
+						for ( x = i; x >= 0; x--) {
+							job[x][j*3+2] = start[j].realy;
+						}
+						start[j].hunty = false;
+					} else if (!start[j].hunty && start[j].realy == -1) {
+						job[t][j*3+2] = start[j].prealy;
+						start[j].realy = start[j].prealy;
 					}
-					hunt2 = false;
-				} else if (!hunt2 && real2 == -1) {
-					job[t][4] = preal2;
-					real2 = preal2;
+					start[j].prealx = start[j].realx;
+					start[j].prealy = start[j].realy;
 				}
-				if (hunt3 && real3 != -1) {
-					for ( x = i; x >= 0; x--) {
-						job[x][2] = real3;
-					}
-					hunt3 = false;
-				} else if (!hunt3 && real3 == -1) {
-					job[t][2] = preal3;
-					real3 = preal3;
-				}
-				if (hunt4 && real4 != -1) {
-					for ( x = i; x >= 0; x--) {
-						job[x][5] = real4;
-					}
-					hunt4 = false;
-				} else if (!hunt4 && real4 == -1) {
-					job[t][5] = preal4;
-					real4 = preal4;
-				}
-				preal1 = real1;
-				preal2 = real2;
-				preal3 = real3;
-				preal4 = real4;
 			}
 		}
 
 		//data in array
-		//console.log(job);
 
-		//general vars
-		var x1,y1,x2,y2;
-		//vars for cell calc
+		console.log(JSON.stringify(listOfTrials));
+
+		//input info
 		var tH = $('#tankHeight').val();
 		var tW = $('#tankWidth').val();
 		var cellWidth = tW / wD;
 		var cellHeight = tH / hD;
-		var cells1 = new Array(hD * wD).fill(0);
-		var cells2 = new Array(hD * wD).fill(0);
-		var cell1b = [];
-		var cell2b = [];
-
-		//vars for boundary
-		var startTime = job[0][0];
 		var xb = $('#xbound').val();
 		var yb = $('#ybound').val();
-		var left1 = job[0][1] < xb;
-		var left2 = job[0][4] < xb;
-		var down1 = job[0][2] < yb;
-		var down2 = job[0][5] < yb;
-		var xlat1 = 0,
-		    ylat1 = 0,
-		    xlat2 = 0,
-		    ylat2 = 0;
-		var xcross1 = 0,
-		    ycross1 = 0,
-		    xcross2 = 0,
-		    ycross2 = 0;
-
-		//vars for moving/still
 		var moveAllowed = $('#moving').val();
 		var moveTime = $('#still').val();
-		var prevx1 = job[0][1];
-		var prevy1 = job[0][2];
-		var prevx2 = job[0][4];
-		var prevy2 = job[0][5];
-		var prevTime = job[0][0];
-		var moving1 = 0;
-		var moving2 = 0;
-		var still1 = 0;
-		var still2 = 0;
-		var moveRatio = moveAllowed / moveTime;
-
-		//vars for exterior
-		var interior1 = 0;
-		var exterior1 = 0;
-		var interior2 = 0;
-		var exterior2 = 0;
 		var extRange = $('#tankHeight').val() * $('#exterior').val() / 100.0;
-
-		//vars for point of interest
 		var poix = $('#xpoint').val();
 		var poiy = $('#ypoint').val();
 		var radius = $('#rpoint').val();
-		//is within poi
-		var withinpoi1 = calcDist(prevx1, prevy1, poix, poiy) <= radius;
-		var withinpoi2 = calcDist(prevx2, prevy2, poix, poiy) <= radius;
-		//start fish enter
-		var withinstart1 = withinpoi1 ? 0 : -1;
-		var withinstart2 = withinpoi2 ? 0 : -1;
-		//time in poi
-		var within1 = 0;
-		var within2 = 0;
-		//time til enter 1st time
-		var poilat1 = withinpoi1 ? 0 : -1;
-		var poilat2 = withinpoi2 ? 0 : -1;
-		//count times enter poi
-		var poi1 = withinpoi1 ? 1 : 0;
-		var poi2 = withinpoi2 ? 1 : 0;
-		var tempd1,
-		    tempd2;
+		var startTime = job[0][0];
+		var prevTime = job[0][0];
+		var moveRatio = moveAllowed / moveTime;
 
-		//record the each fish spends in each cell
-		var cellnum1,
-		    cellnum2,
-		    prev1 = -1,
-		    prev2 = -1;
-		var start1 = -1,
-		    start2 = -1,
-		    diff;
+		var fileData={};
+		for(var j=0;j<num_jobs;j++){
+			fileData[j]={};
+			//general vars
+			fileData[j].x=0;
+			fileData[j].y=0;
+			fileData[j].name=listOfTrials[j];
+			fileData[j].cells=new Array(hD * wD).fill(0);
+			fileData[j].cellb=[];
+			fileData[j].left=job[0][j*3+1]<xb;
+			fileData[j].down=job[0][j*3+2]<yb;
+			fileData[j].xlat=0;
+			fileData[j].ylat=0;
+			fileData[j].xcross=0;
+			fileData[j].ycross=0;
+			fileData[j].prevx=job[0][j*3+1];
+			fileData[j].prevy=job[0][j*3+2];
+			fileData[j].moving=0;
+			fileData[j].still=0;
+			fileData[j].interior=0;
+			fileData[j].exterior=0;
+			fileData[j].withinpoi=calcDist(fileData[j].prevx, fileData[j].prevy, poix, poiy) <= radius;
+			fileData[j].withinstart=fileData[j].withinpoi ? 0 : -1;
+			fileData[j].within=0;
+			fileData[j].poilat=fileData[j].withinpoi ? 0 : -1;
+			fileData[j].poi=fileData[j].withinpoi ? 1 : 0;
+			fileData[j].tempd=0;
+			fileData[j].cellnum=0;
+			fileData[j].prev=-1;
+			fileData[j].start=-1;
+		}
+
+		var diff;
 		//console.log(job);
 		for ( l = 0; l < job.length; l++) {
-			x1=job[l][1];
-			y1=job[l][2];
-			x2=job[l][4];
-			y2=job[l][5];
-
-			//cell calc
-			if (start1 == -1) {
-				start1 = job[l][0];
-			}
-			if (start2 == -1) {
-				start2 = job[l][0];
-			}
-			cellnum1 = Math.floor(x1 / cellWidth) + (((wD-1)*Math.floor(y1 / cellHeight)) + Math.floor(y1 / cellHeight));
-			cellnum2 = Math.floor(x2 / cellWidth) + (((wD-1)*Math.floor(y2 / cellHeight)) + Math.floor(y2 / cellHeight));
-			//console.log(cellnum1+' '+prev1);
-			if (cellnum1 != prev1 && prev1 != -1) {
-				diff = job[l][0] - start1;
-				cells1[prev1] += diff;
-				start1 = -1;
-				cell1b.push([prev1 + 1, cellnum1 + 1]);
-			}
-			if (cellnum2 != prev2 && prev1 != -1) {
-				diff = job[l][0] - start2;
-				cells2[prev2] += diff;
-				start2 = -1;
-				cell2b.push([prev2 + 1, cellnum2 + 1]);
-			}
-			prev1 = cellnum1;
-			prev2 = cellnum2;
-
-			//moving/still
-			//fish 1
-			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(x1, y1, prevx1, prevy1) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
-				moving1 += job[l][0] - prevTime;
-			} else {
-				still1 += job[l][0] - prevTime;
-			}
-			//fish 2
-			if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(x2, y2, prevx2, prevy2) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
-				moving2 += job[l][0] - prevTime;
-			} else {
-				still2 += job[l][0] - prevTime;
-			}
-			prevx1 = x1;
-			prevy1 = y1;
-			prevx2 = x2;
-			prevy2 = y2;
-
-			//near exterior
-			//fish 1
-			if (x1 < extRange || x1 > tW - extRange || y1 < extRange || y1 > tH - extRange) {
-				exterior1 += job[l][0] - prevTime;
-			} else {
-				interior1 += job[l][0] - prevTime;
-			}
-			//fish 2
-			if (x2 < extRange || x2 > tW - extRange || y2 < extRange || y2 > tH - extRange) {
-				exterior2 += job[l][0] - prevTime;
-			} else {
-				interior2 += job[l][0] - prevTime;
-			}
-
-			//near POI
-			tempd1 = calcDist(x1, y1, poix, poiy);
-			tempd2 = calcDist(x2, y2, poix, poiy);
-			//fish1
-			if (withinpoi1) {
-				if (tempd1 > radius) {
-					within1 += job[l][0] - withinstart1;
-					withinpoi1 = false;
+			for(var j=0;j<num_jobs;j++){
+				fileData[j].x=job[l][j*3+1];
+				fileData[j].y=job[l][j*3+2];
+				//cell calc
+				if (fileData[j].start == -1) {
+					fileData[j].start = job[l][0];
 				}
-			} else {
-				if (tempd1 <= radius) {
-					withinpoi1 = true;
-					poi1++;
-					if (poilat1 == -1) {
-						poilat1 = job[l][0] - 0;
+				fileData[j].cellnum = Math.floor(fileData[j].x / cellWidth) + (((wD-1)*Math.floor(fileData[j].y / cellHeight)) + Math.floor(fileData[j].y / cellHeight));
+				console.log('cellnum:'+fileData[j].cellnum);
+				if (fileData[j].cellnum != fileData[j].prev && fileData[j].prev != -1) {
+					diff = job[l][0] - fileData[j].start;
+					fileData[j].cells[fileData[j].prev] += diff;
+					fileData[j].start = -1;
+					fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
+				}
+				fileData[j].prev = fileData[j].cellnum;
+				//moving/still
+				if (((job[l][0] - prevTime) / 1000) != 0 && calcDist(fileData[j].x, fileData[j].y, fileData[j].prevx, fileData[j].prevy) / ((job[l][0] - prevTime) / 1000) >= moveRatio) {
+					fileData[j].moving += job[l][0] - prevTime;
+				} else {
+					fileData[j].still += job[l][0] - prevTime;
+				}
+				fileData[j].prevx = fileData[j].x;
+				fileData[j].prevy = fileData[j].y;
+				//near exterior
+				if (fileData[j].x < extRange || fileData[j].x > tW - extRange || fileData[j].y < extRange || fileData[j].y > tH - extRange) {
+					fileData[j].exterior += job[l][0] - prevTime;
+				} else {
+					fileData[j].interior += job[l][0] - prevTime;
+				}
+				//near POI
+				fileData[j].tempd = calcDist(fileData[j].x, fileData[j].y, poix, poiy);
+				//fish1
+				if (fileData[j].withinpoi) {
+					if (fileData[j].tempd > radius) {
+						fileData[j].within += job[l][0] - fileData[j].withinstart;
+						fileData[j].withinpoi = false;
 					}
-					withinstart1 = job[l][0];
-				}
-			}
-			//fish2
-			if (withinpoi2) {
-				if (tempd2 > radius) {
-					within2 += job[l][0] - withinstart2;
-					withinpoi2 = false;
-				}
-			} else {
-				if (tempd2 <= radius) {
-					withinpoi2 = true;
-					poi2++;
-					if (poilat2 == -1) {
-						poilat2 = job[l][0] - 0;
+				} else {
+					if (fileData[j].tempd <= radius) {
+						fileData[j].withinpoi = true;
+						fileData[j].poi++;
+						if (fileData[j].poilat == -1) {
+							fileData[j].poilat = job[l][0] - 0;
+						}
+						fileData[j].withinstart = job[l][0];
 					}
-					withinstart2 = job[l][0];
 				}
-			}
-
-			//boundary crossing calc
-			//fish1 x boundary
-			if (left1 && !x1 < xb) {//crossed left to right
-				if (xlat1 == 0) {
-					xlat1 = job[l][0] - startTime;
+				//boundary crossing calc
+				//fish x boundary
+				if (fileData[j].left && !(fileData[j].x < xb)) {//crossed left to right
+					if (fileData[j].xlat == 0) {
+						fileData[j].xlat = job[l][0] - startTime;
+					}
+					fileData[j].xcross++;
+				} else if (!fileData[j].left && fileData[j].x < xb) {//crossed right to left
+					if (fileData[j].xlat == 0) {
+						fileData[j].xlat = job[l][0] - startTime;
+					}
+					fileData[j].xcross++;
 				}
-				xcross1++;
-			} else if (!left1 && x1 < xb) {//crossed right to left
-				if (xlat1 == 0) {
-					xlat1 = job[l][0] - startTime;
+				//fish y boundary
+				if (fileData[j].down && !(fileData[j].y < yb)) {//crossed down to up
+					if (fileData[j].ylat == 0) {
+						fileData[j].ylat = job[l][0] - startTime;
+					}
+					fileData[j].ycross++;
+				} else if (!fileData[j].down && fileData[j].y < yb) {//crossed up to down
+					if (fileData[j].ylat == 0) {
+						fileData[j].ylat = job[l][0] - startTime;
+					}
+					fileData[j].ycross++;
 				}
-				xcross1++;
-			}
-			//fish1 y boundary
-			if (down1 && !y1 < yb) {//crossed down to up
-				if (ylat1 == 0) {
-					ylat1 = job[l][0] - startTime;
-				}
-				ycross1++;
-			} else if (!down1 && y1 < yb) {//crossed up to down
-				if (ylat1 == 0) {
-					ylat1 = job[l][0] - startTime;
-				}
-				ycross1++;
-			}
-			//fish2 x boundary
-			if (left2 && !x2 < xb) {//crossed left to right
-				if (xlat2 == 0) {
-					xlat2 = job[l][0] - startTime;
-				}
-				xcross2++;
-			} else if (!left2 && x2 < xb) {//crossed right to left
-				if (xlat2 == 0) {
-					xlat2 = job[l][0] - startTime;
-				}
-				xcross2++;
-			}
-			//fish2 y boundary
-			if (down2 && !y2 < yb) {//crossed down to up
-				if (ylat2 == 0) {
-					ylat2 = job[l][0] - startTime;
-				}
-				ycross2++;
-			} else if (!down2 && y2 < yb) {//crossed up to down
-				if (ylat2 == 0) {
-					ylat2 = job[l][0] - startTime;
-				}
-				ycross2++;
 			}
 
 			prevTime = job[l][0];
-
-			/*if(job[l][0]==117543){
-				console.log('#######');
-				console.log(job[l][1] +' '+job[l][2]);
-				console.log(prev1);
-			}*/
 		}
-		diff = job[job.length-1][0] - start1;
-		cells1[prev1] += diff;
-		cell1b.push([prev1 + 1, cellnum1 + 1]);
+		for(var j=0;j<num_jobs;j++){
+			diff = job[job.length-1][0] - fileData[j].start;
+			fileData[j].cells[fileData[j].prev] += diff;
+			fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
+		}
 
-		diff = job[job.length-1][0] - start2;
-		cells2[prev2] += diff;
-		cell2b.push([prev2 + 1, cellnum2 + 1]);
-
-		/*console.log(cell1b);
-
-		console.log('*********************');
-		//debugging for cell amount
-		for(i=0;i<cells1.length;i++){
-			console.log((cells1[i]/1000.0).toFixed(2));
-		}//
-		console.log('*********************');*/
-		//debugging boundary
-		//console.log(xcross1+' '+xcross2+' '+ycross1+' '+ycross2);
-		//console.log(xlat1+' '+ylat1+' '+xlat2+' '+ylat2);
-
-		var total_time = moving1 + still1;
-		var movingProp1 = (moving1 / total_time).toFixed(2);
-		var stillProp1 = (still1 / total_time).toFixed(2);
-		var intProp1 = (interior1 / total_time).toFixed(2);
-		var extProp1 = (exterior1 / total_time).toFixed(2);
+		console.log('#############################');
+		console.log(JSON.stringify(fileData));
+		console.log('#############################');
 
 		//data to csv format
-		if (name2 != '') {
-			var movingProp2 = (moving2 / total_time).toFixed(2);
-			var stillProp2 = (still2 / total_time).toFixed(2);
-			var intProp2 = (interior2 / total_time).toFixed(2);
-			var extProp2 = (exterior2 / total_time).toFixed(2);
-			//exportInfo=exportInfo+'Job_1,'+name1+',';
-			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad((cell1b.length / toSec(total_time)).toFixed(2));
+		var total_time = fileData[0].moving + fileData[0].still;
+		for(var j=0;j<num_jobs;j++){
+			fileData[j].movingProp=(fileData[j].moving / total_time).toFixed(2);
+			fileData[j].stillProp=(fileData[j].still / total_time).toFixed(2);
+			fileData[j].intProp=(fileData[j].interior / total_time).toFixed(2);
+			fileData[j].extProp=(fileData[j].exterior / total_time).toFixed(2);
+			exportInfo += pad(fileData[j].name, PADDING_AMT, comma = false) + pad(toSec(fileData[j].moving)) + pad(toSec(fileData[j].still)) + pad(fileData[j].movingProp) + pad(fileData[j].stillProp) + pad(toSec(fileData[j].xlat)) + pad(fileData[j].xcross) + pad(toSec(fileData[j].ylat)) + pad(fileData[j].ycross);
+			exportInfo += pad(toSec(fileData[j].interior)) + pad(toSec(fileData[j].exterior)) + pad(fileData[j].intProp) + pad(fileData[j].extProp) + pad(toSec(fileData[j].poilat)) + pad(toSec(fileData[j].within)) + pad(fileData[j].poi) + pad(fileData[j].cellb.length) + pad((fileData[j].cellb.length / toSec(total_time)).toFixed(2));
 			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(toSec(cells1[c]));
+				exportInfo += pad(toSec(fileData[j].cells[c]));
 			}
 			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad((cells1[c] / total_time).toFixed(2));
-			}
-			exportInfo += '\n';
-			exportInfo += pad(name2, PADDING_AMT, comma = false) + pad(toSec(moving2)) + pad(toSec(still2)) + pad(movingProp2) + pad(stillProp2) + pad(toSec(xlat2)) + pad(xcross2) + pad(toSec(ylat2)) + pad(ycross2);
-			exportInfo += pad(toSec(interior2)) + pad(toSec(exterior2)) + pad(intProp2) + pad(extProp2) + pad(toSec(poilat2)) + pad(toSec(within2)) + pad(poi2) + pad(cell2b.length) + pad((cell2b.length / toSec(total_time)).toFixed(2));
-			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(toSec(cells2[c]));
-			}
-			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad((cells2[c] / total_time).toFixed(2));
-			}
-			exportInfo += '\n';
-		} else {
-			exportInfo += pad(name1, PADDING_AMT, comma = false) + pad(toSec(moving1)) + pad(toSec(still1)) + pad(movingProp1) + pad(stillProp1) + pad(toSec(xlat1)) + pad(xcross1) + pad(toSec(ylat1)) + pad(ycross1);
-			exportInfo += pad(toSec(interior1)) + pad(toSec(exterior1)) + pad(intProp1) + pad(extProp1) + pad(toSec(poilat1)) + pad(toSec(within1)) + pad(poi1) + pad(cell1b.length) + pad((cell1b.length / toSec(total_time)).toFixed(2));
-			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad(toSec(cells1[c]));
-			}
-			for ( c = 0; c < hD * wD; c++) {
-				exportInfo += pad((cells1[c] / total_time).toFixed(2));
+				exportInfo += pad((fileData[j].cells[c] / total_time).toFixed(2));
 			}
 			exportInfo += '\n';
 		}
+
+
 	}
 	var d = new Date();
 	csvFileName = d.toLocaleDateString().replace(/\//g, '_') + '_';
 	if (fileContent.length == 1)
-		csvFileName += "1file.csv";
+	csvFileName += "1file.csv";
 	else
-		csvFileName = csvFileName + fileContent.length + 'files.csv';
+	csvFileName = csvFileName + fileContent.length + 'files.csv';
 	console.log(csvFileName);
 	console.log(exportInfo);
 	exportInfo = exportInfo.replace(/\n/g, "\r\n");
@@ -554,11 +410,11 @@ function readmultifiles(files) {
 	globalFiles = files;
 	var reader = new FileReader();
 	var temp,
-	    ntemp;
+	ntemp;
 	function readFile(index) {
 		ntemp = [];
 		if (index >= files.length)
-			return;
+		return;
 
 		var file = files[index];
 		fileNames.push(file.name);
