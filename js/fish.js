@@ -278,7 +278,7 @@ function calculate(checkForNegatives) {
 		}
 
 		var diff;
-		console.log(job);
+		//console.log(job);
 		for ( l = 0; l < job.length; l++) {
 			for(var j=0;j<num_jobs;j++){
 				fileData[j].x=job[l][j*3+1];
