@@ -50,12 +50,34 @@ function toSec(milli) {
 $(function() {
 	//load any saved values
 	for(var t=0;t<9;t++){
-		$('#jobstart'+(t+1)).val(localStorage.getItem('jobstart'+(t+1)));
+		if (localStorage.getItem('jobstart'+(t+1)) !== null)
+			$('#jobstart'+(t+1)).val(localStorage.getItem('jobstart'+(t+1)));
 	}
-	$('#tankWidth').val(localStorage.getItem('width'));
-	$('#tankHeight').val(localStorage.getItem('height'));
-	$('#widthDiv').val(localStorage.getItem('widthDiv'));
-	$('#heightDiv').val(localStorage.getItem('heightDiv'));
+	if (localStorage.getItem("width") !== null)
+		$('#tankWidth').val(localStorage.getItem('width'));
+	if (localStorage.getItem("height") !== null)
+		$('#tankHeight').val(localStorage.getItem('height'));
+	if (localStorage.getItem("widthDiv") !== null)
+		$('#widthDiv').val(localStorage.getItem('widthDiv'));
+	if (localStorage.getItem("heightDiv") !== null)
+		$('#heightDiv').val(localStorage.getItem('heightDiv'));
+	if (localStorage.getItem("xbound") !== null)
+		$('#xbound').val(localStorage.getItem('xbound'));
+	if (localStorage.getItem("ybound") !== null)
+		$('#ybound').val(localStorage.getItem('ybound'));
+	if (localStorage.getItem("movingRange") !== null)
+		$('#moving').val(localStorage.getItem('movingRange'));
+	if (localStorage.getItem("movingTime") !== null)
+		$('#still').val(localStorage.getItem('movingTime'));
+	if (localStorage.getItem("edgeAmount") !== null)
+		$('#exterior').val(localStorage.getItem('edgeAmount'));
+	if (localStorage.getItem("poix") !== null)
+		$('#xpoint').val(localStorage.getItem('poix'));
+	if (localStorage.getItem("poiy") !== null)
+		$('#ypoint').val(localStorage.getItem('poiy'));
+	if (localStorage.getItem("poiRadius") !== null)
+		$('#rpoint').val(localStorage.getItem('poiRadius'));
+
 	//initial table creation
 	updateTank();
 
@@ -82,6 +104,18 @@ $(function() {
 		//save divisions
 		localStorage.setItem('widthDiv',$('#widthDiv').val());
 		localStorage.setItem('heightDiv',$('#heightDiv').val());
+		//save boundaries
+		localStorage.setItem('xbound',$('#xbound').val());
+		localStorage.setItem('ybound',$('#ybound').val());
+		//save moving/still
+		localStorage.setItem('movingRange',$('#moving').val());
+		localStorage.setItem('movingTime',$('#still').val());
+		//save edge
+		localStorage.setItem('edgeAmount',$('#exterior').val());
+		//save POI
+		localStorage.setItem('poix',$('#xpoint').val());
+		localStorage.setItem('poiy',$('#ypoint').val());
+		localStorage.setItem('poiRadius',$('#rpoint').val());
 	});
 	//if user changes # of zones or width of zones can recalculate time in each, without re-upload
 	$('#calculate').on('click', function() {
@@ -103,10 +137,6 @@ $(function() {
 		} else {
 			controlFile.replaceWith( controlFile = controlFile.clone(true));
 		}
-		//download change icon, title, name
-		$('#downloadImg').attr('src', 'img/download.png');
-		$('#download').attr('title', 'Download fish tracking data');
-		$('#download').attr('name', 'download');
 
 		//enable button
 		$('#calculate').attr('disabled', false);
@@ -180,6 +210,11 @@ function calculate(checkForNegatives) {
 		//var split = fileNames[i].indexOf('-');
 		//listOfTrials.concat(fileNames[i].split('-'));
 		listOfTrials=fileNames[i].split('-');
+		//ERROR-input says there are x jobs and there are y-jobs in the file
+		if(listOfTrials.length!=num_jobs){
+			alert('There are '+num_jobs+' jobs in the input but the file ('+fileNames[i]+') has '+listOfTrials.length+' jobs');
+			return;
+		}
 		for(var j=0;j<num_jobs;j++){
 			//x
 			if (job[0][j*3+1] == -1){
@@ -223,8 +258,7 @@ function calculate(checkForNegatives) {
 		}
 
 		//data in array
-
-		console.log(JSON.stringify(listOfTrials));
+		//console.log(JSON.stringify(listOfTrials));
 
 		//input info
 		var tH = $('#tankHeight').val();
@@ -242,6 +276,14 @@ function calculate(checkForNegatives) {
 		var startTime = job[0][0];
 		var prevTime = job[0][0];
 		var moveRatio = moveAllowed / moveTime;
+		if(xb>tW){
+			alert('X boundary ('+xb+') is greater than the tank width ('+tW+')');
+			return;
+		}
+		if(yb>tH){
+			alert('X boundary ('+yb+') is greater than the tank width ('+tH+')');
+			return;
+		}
 
 		var fileData={};
 		for(var j=0;j<num_jobs;j++){
@@ -331,11 +373,13 @@ function calculate(checkForNegatives) {
 					if (fileData[j].xlat == 0) {
 						fileData[j].xlat = job[l][0] - startTime;
 					}
+					fileData[j].left=false;
 					fileData[j].xcross++;
 				} else if (!fileData[j].left && fileData[j].x < xb) {//crossed right to left
 					if (fileData[j].xlat == 0) {
 						fileData[j].xlat = job[l][0] - startTime;
 					}
+					fileData[j].left=true;
 					fileData[j].xcross++;
 				}
 				//fish y boundary
@@ -343,11 +387,13 @@ function calculate(checkForNegatives) {
 					if (fileData[j].ylat == 0) {
 						fileData[j].ylat = job[l][0] - startTime;
 					}
+					fileData[j].down=false;
 					fileData[j].ycross++;
 				} else if (!fileData[j].down && fileData[j].y < yb) {//crossed up to down
 					if (fileData[j].ylat == 0) {
 						fileData[j].ylat = job[l][0] - startTime;
 					}
+					fileData[j].down=false;
 					fileData[j].ycross++;
 				}
 			}
@@ -359,10 +405,6 @@ function calculate(checkForNegatives) {
 			fileData[j].cells[fileData[j].prev] += diff;
 			fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
 		}
-
-		//console.log('#############################');
-		//console.log(JSON.stringify(fileData));
-		//console.log('#############################');
 
 		//data to csv format
 		var total_time = fileData[0].moving + fileData[0].still;
@@ -390,8 +432,8 @@ function calculate(checkForNegatives) {
 	csvFileName += "1file.csv";
 	else
 	csvFileName = csvFileName + fileContent.length + 'files.csv';
-	console.log(csvFileName);
-	console.log(exportInfo);
+	//console.log(csvFileName);
+	//console.log(exportInfo);
 	exportInfo = exportInfo.replace(/\n/g, "\r\n");
 	var downloadContent = new Blob([exportInfo], {
 		type : 'text/csv'
@@ -399,6 +441,11 @@ function calculate(checkForNegatives) {
 	url = window.URL.createObjectURL(downloadContent);
 	$('#download').attr('href', url);
 	$('#download').attr('download', csvFileName);
+
+	//download change icon, title, name
+	$('#downloadImg').attr('src', 'img/download.png');
+	$('#download').attr('title', 'Download fish tracking data');
+	$('#download').attr('name', 'download');
 }
 
 function readmultifiles(files) {
