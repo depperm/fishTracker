@@ -163,8 +163,8 @@ function pad(str,padding=PADDING_AMT,comma) {
 //calculate time each job spends per zone
 function calculate(checkForNegatives) {
 
-	var hD = $('#heightDiv').val();
-	var wD = $('#widthDiv').val();
+	var hD = parseInt($('#heightDiv').val());
+	var wD = parseInt($('#widthDiv').val());
 	//get starting points
 	var num_jobs=0;
 	var startingPos=[];
@@ -261,27 +261,37 @@ function calculate(checkForNegatives) {
 		//console.log(JSON.stringify(listOfTrials));
 
 		//input info
-		var tH = $('#tankHeight').val();
-		var tW = $('#tankWidth').val();
+		var tH = parseInt($('#tankHeight').val());
+		var tW = parseInt($('#tankWidth').val());
 		var cellWidth = tW / wD;
 		var cellHeight = tH / hD;
-		var xb = $('#xbound').val();
-		var yb = $('#ybound').val();
-		var moveAllowed = $('#moving').val();
-		var moveTime = $('#still').val();
-		var extRange = $('#tankHeight').val() * $('#exterior').val() / 100.0;
-		var poix = $('#xpoint').val();
-		var poiy = $('#ypoint').val();
-		var radius = $('#rpoint').val();
+		var xb = parseInt($('#xbound').val());
+		var yb = parseInt($('#ybound').val());
+		var moveAllowed = parseInt($('#moving').val());
+		var moveTime = parseInt($('#still').val());
+		var extRange = parseInt($('#tankHeight').val()) * parseInt($('#exterior').val()) / 100.0;
+		var poix = parseInt($('#xpoint').val());
+		var poiy = parseInt($('#ypoint').val());
+		var radius = parseInt($('#rpoint').val());
 		var startTime = job[0][0];
 		var prevTime = job[0][0];
 		var moveRatio = moveAllowed / moveTime;
+		var cellNumbers=[];
+		var trow=[];
+		var row,col;
+		for(var q=0;q<hD;q++){
+			for(var r=0;r<wD;r++){
+				trow.push((q*wD)+r+1);
+			}
+			cellNumbers.push(trow.slice(0));
+			trow=[];
+		}
 		if(xb>tW){
 			alert('X boundary ('+xb+') is greater than the tank width ('+tW+')');
 			return;
 		}
 		if(yb>tH){
-			alert('X boundary ('+yb+') is greater than the tank width ('+tH+')');
+			alert('Y boundary ('+yb+') is greater than the tank height ('+tH+')');
 			return;
 		}
 
@@ -327,12 +337,14 @@ function calculate(checkForNegatives) {
 				if (fileData[j].start == -1) {
 					fileData[j].start = job[l][0];
 				}
-				fileData[j].cellnum = Math.floor(fileData[j].x / cellWidth) + (((wD-1)*Math.floor(fileData[j].y / cellHeight)) + Math.floor(fileData[j].y / cellHeight));
+				row=Math.floor(fileData[j].y/cellHeight);
+				col=Math.floor(fileData[j].x/cellWidth);
+				fileData[j].cellnum=cellNumbers[row][col];
 				if (fileData[j].cellnum != fileData[j].prev && fileData[j].prev != -1) {
 					diff = job[l][0] - fileData[j].start;
-					fileData[j].cells[fileData[j].prev] += diff;
+					fileData[j].cells[fileData[j].prev-1] += diff;
 					fileData[j].start = -1;
-					fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
+					fileData[j].cellb.push([fileData[j].prev, fileData[j].cellnum]);
 				}
 				fileData[j].prev = fileData[j].cellnum;
 				//moving/still
@@ -393,7 +405,7 @@ function calculate(checkForNegatives) {
 					if (fileData[j].ylat == 0) {
 						fileData[j].ylat = job[l][0] - startTime;
 					}
-					fileData[j].down=false;
+					fileData[j].down=true;
 					fileData[j].ycross++;
 				}
 			}
