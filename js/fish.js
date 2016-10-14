@@ -5,6 +5,9 @@ var csvFileName;
 var url;
 var exportInfo;
 var zones = [];
+var boundaryLogging=false;
+var progressLogging=false;
+var numErrors=0;
 
 function getZones() {
 	zones = [];
@@ -162,7 +165,9 @@ function pad(str,padding=PADDING_AMT,comma) {
 
 //calculate time each job spends per zone
 function calculate(checkForNegatives) {
-
+	numErrors=0;
+  progressLogging=$('#progressLogging').is(':checked');
+	boundaryLogging=$('#boundaryLogging').is(':checked');
 	var hD = parseInt($('#heightDiv').val());
 	var wD = parseInt($('#widthDiv').val());
 	//get starting points
@@ -234,7 +239,7 @@ function calculate(checkForNegatives) {
 					//console.log('y is:'+start[j].realy);
 					//console.log(start[j].hunty && start[j].realy != -1);
 					if (start[j].huntx && start[j].realx != -1) {
-						for ( x = i; x >= 0; x--) {
+						for ( x = t; x >= 0; x--) {
 							job[x][j*3+1] = start[j].realx;
 						}
 						start[j].huntx = false;
@@ -243,7 +248,7 @@ function calculate(checkForNegatives) {
 						start[j].realx = start[j].prealx;
 					}
 					if (start[j].hunty && start[j].realy != -1) {
-						for ( x = i; x >= 0; x--) {
+						for ( x = t; x >= 0; x--) {
 							job[x][j*3+2] = start[j].realy;
 						}
 						start[j].hunty = false;
@@ -254,6 +259,9 @@ function calculate(checkForNegatives) {
 					start[j].prealx = start[j].realx;
 					start[j].prealy = start[j].realy;
 				}
+			}
+			if(progressLogging){
+				console.log('negatives removed from job '+(i+1)+' of '+fileContent.length+'- '+(((i+1)*100)/fileContent.length).toFixed(0)+'%');
 			}
 		}
 
@@ -339,7 +347,18 @@ function calculate(checkForNegatives) {
 				}
 				row=Math.floor(fileData[j].y/cellHeight);
 				col=Math.floor(fileData[j].x/cellWidth);
-				fileData[j].cellnum=cellNumbers[row][col];
+				if(row<0||col<0||row>=cellNumbers.length||col>=cellNumbers[row].length){
+					numErrors++;
+					if(numErrors>5){
+						console.log('Too many errors, stopped calculating');
+						return;
+					}
+					console.log('error on line:'+JSON.stringify(job[l]));
+					console.log('Error reading: \''+fileData[j].name+'\' when time: '+job[l][0]+', row, col was calculated to be '+(row+1)+','+(col+1));
+					fileData[j].cellnum=-1;
+				}else{
+					fileData[j].cellnum=cellNumbers[row][col];
+				}
 				if (fileData[j].cellnum != fileData[j].prev && fileData[j].prev != -1) {
 					diff = job[l][0] - fileData[j].start;
 					fileData[j].cells[fileData[j].prev-1] += diff;
@@ -412,15 +431,13 @@ function calculate(checkForNegatives) {
 
 			prevTime = job[l][0];
 		}
-		for(var j=0;j<num_jobs;j++){
-			diff = job[job.length-1][0] - fileData[j].start;
-			fileData[j].cells[fileData[j].prev] += diff;
-			fileData[j].cellb.push([fileData[j].prev + 1, fileData[j].cellnum + 1]);
-		}
 
 		//data to csv format
 		var total_time = fileData[0].moving + fileData[0].still;
 		for(var j=0;j<num_jobs;j++){
+			if(boundaryLogging){
+				console.log(fileData[j].name+':'+JSON.stringify(fileData[j].cellb))
+			}
 			fileData[j].movingProp=(fileData[j].moving / total_time).toFixed(2);
 			fileData[j].stillProp=(fileData[j].still / total_time).toFixed(2);
 			fileData[j].intProp=(fileData[j].interior / total_time).toFixed(2);
@@ -440,10 +457,12 @@ function calculate(checkForNegatives) {
 	}
 	var d = new Date();
 	csvFileName = d.toLocaleDateString().replace(/\//g, '_') + '_';
-	if (fileContent.length == 1)
-	csvFileName += "1file.csv";
-	else
-	csvFileName = csvFileName + fileContent.length + 'files.csv';
+	if (fileContent.length == 1){
+		csvFileName += "1file.csv";
+	}
+	else{
+		csvFileName = csvFileName + fileContent.length + 'files.csv';
+	}
 	//console.log(csvFileName);
 	//console.log(exportInfo);
 	exportInfo = exportInfo.replace(/\n/g, "\r\n");
@@ -461,6 +480,8 @@ function calculate(checkForNegatives) {
 }
 
 function readmultifiles(files) {
+	numErrors=0;
+	progressLogging=$('#progressLogging').is(':checked');
 	fileContent = [];
 	fileNames = [];
 	globalFiles = files;
@@ -469,8 +490,9 @@ function readmultifiles(files) {
 	ntemp;
 	function readFile(index) {
 		ntemp = [];
-		if (index >= files.length)
-		return;
+		if (index >= files.length){
+			return;
+		}
 
 		var file = files[index];
 		fileNames.push(file.name);
@@ -488,6 +510,10 @@ function readmultifiles(files) {
 					if (diff % 3 == 0) {
 						ntemp.push(t);
 					} else {
+						numErrors++;
+						if(numErrors>5){
+							break;
+						}
 						console.log('Error reading:' + file.name + ' at line ' + i);
 					}
 				} else {
@@ -495,7 +521,9 @@ function readmultifiles(files) {
 				}
 			}
 			fileContent.push(ntemp);
-
+			if(progressLogging){
+				console.log('read file '+(index+1)+' of '+files.length+'- '+(((index+1)*100)/files.length).toFixed(0)+'%');
+			}
 			readFile(index + 1);
 			if (fileContent.length == files.length) {
 				listOfTrials = [];
