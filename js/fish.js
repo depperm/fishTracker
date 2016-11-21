@@ -332,7 +332,6 @@ function calculate(checkForNegatives) {
 			fileData[j].tempd=0;
 			fileData[j].cellnum=0;
 			fileData[j].prev=-1;
-			fileData[j].start=-1;
 		}
 
 		var diff;
@@ -342,9 +341,6 @@ function calculate(checkForNegatives) {
 				fileData[j].x=job[l][j*3+1]-startingPos[j][0];
 				fileData[j].y=job[l][j*3+2]-startingPos[j][1];
 				//cell calc
-				if (fileData[j].start == -1) {
-					fileData[j].start = job[l][0];
-				}
 				row=Math.floor(fileData[j].y/cellHeight);
 				col=Math.floor(fileData[j].x/cellWidth);
 				if(row<0||col<0||row>=cellNumbers.length||col>=cellNumbers[row].length){
@@ -358,12 +354,15 @@ function calculate(checkForNegatives) {
 					fileData[j].cellnum=-1;
 				}else{
 					fileData[j].cellnum=cellNumbers[row][col];
+					if(fileData[j].prev!=fileData[j].cellnum){
+						fileData[j].cellb.push([fileData[j].prev, fileData[j].cellnum])
+					}
 				}
-				if (fileData[j].cellnum != fileData[j].prev && fileData[j].prev != -1) {
-					diff = job[l][0] - fileData[j].start;
-					fileData[j].cells[fileData[j].prev-1] += diff;
-					fileData[j].start = -1;
-					fileData[j].cellb.push([fileData[j].prev, fileData[j].cellnum]);
+				if(l==0){
+					fileData[j].cells[fileData[j].cellnum-1]+=parseInt(job[l][0]);
+				}
+				else{
+					fileData[j].cells[fileData[j].cellnum-1]+=parseInt(job[l][0])-parseInt(job[l-1][0]);
 				}
 				fileData[j].prev = fileData[j].cellnum;
 				//moving/still
